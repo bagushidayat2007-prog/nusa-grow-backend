@@ -18,22 +18,21 @@ app.use(morgan('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Serve static files (index.html, admin.html, dll)
+// Serve static files
 app.use(express.static(path.join(__dirname)));
 
-// Konfigurasi Database
-// Fallback ke localhost jika variabel Railway belum terdeteksi
+// Database connection
 const sequelize = new Sequelize(
-  process.env.DB_NAME || 'nusa_grow',
-  process.env.DB_USER || 'root',
-  process.env.DB_PASSWORD || '',
+  process.env.DB_NAME,
+  process.env.DB_USER,
+  process.env.DB_PASSWORD,
   {
-    host: process.env.DB_HOST || 'localhost',
+    host: process.env.DB_HOST,
     port: process.env.DB_PORT || 3306,
     dialect: process.env.DB_DIALECT || 'mysql',
     dialectOptions: process.env.NODE_ENV === 'production' ? {
       ssl: { 
-        require: false, // Matikan SSL strict untuk menghindari error di Railway
+        require: false,
         rejectUnauthorized: false 
       }
     } : {},
@@ -43,11 +42,11 @@ const sequelize = new Sequelize(
       acquire: parseInt(process.env.DB_POOL_ACQUIRE) || 30000,
       idle: parseInt(process.env.DB_POOL_IDLE) || 10000
     },
-    logging: process.env.NODE_ENV === 'development' ? console.log : false
+    logging: false
   }
 );
 
-// Route Health Check (Penting untuk Railway)
+// Routes
 app.get('/api/health', (req, res) => {
   res.json({ 
     status: 'OK', 
@@ -56,41 +55,62 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// Root Route
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-// Admin Route
 app.get('/admin', (req, res) => {
   res.sendFile(path.join(__dirname, 'admin.html'));
 });
 
-// ==========================================
-// STRATEGI ANTI-CRASH: Jalankan Server DULU
-// ==========================================
+// Error handlers global
+process.on('unhandledRejection', (err) => {
+  console.error('❌ Unhandled Rejection:', err);
+});
+
+process.on('uncaughtException', (err) => {
+  console.error('❌ Uncaught Exception:', err);
+});
+
+// Start server - PENTING: listen ke 0.0.0.0
 const PORT = process.env.PORT || 3000;
 
-app.listen(PORT, '0.0.0.0', () => {
+const server = app.listen(PORT, '0.0.0.0', async () => {
   console.log(`🚀 Server running on port ${PORT}`);
   console.log(`📍 Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`🔗 Health check: http://localhost:${PORT}/api/health`);
+  
+  try {
+    await sequelize.authenticate();
+    console.log('✅ Database connected successfully');
+    
+    // Sync database (alter: false untuk production)
+    await sequelize.sync({ alter: process.env.NODE_ENV === 'development' });
+    console.log('🗄️ Database synchronized');
+  } catch (err) {
+    console.error('❌ Database error:', err.message);
+    // Jangan exit, biarkan server tetap jalan
+  }
+});
 
-  // Setelah server jalan, baru coba connect database di background
-  sequelize.authenticate()
-    .then(() => {
-      console.log('✅ Database connected successfully');
-      // Opsional: Sync database jika tabel belum ada
-      // return sequelize.sync({ alter: false }); 
-    })
-    .then(() => {
-      console.log('🗄️ Database synchronized (if needed)');
-    })
-    .catch(err => {
-      console.error('❌ Database connection failed:', err.message);
-      console.log('️ Server is running, but database is not connected.');
-      console.log('💡 Tip: Cek Railway Variables apakah sudah di-Reference ke MySQL Service.');
+// Graceful shutdown
+process.on('SIGTERM', () => {
+  console.log(' SIGTERM received, shutting down gracefully...');
+  server.close(() => {
+    console.log('✅ Process terminated');
+    sequelize.close().then(() => {
+      process.exit(0);
     });
+  });
+});
+
+process.on('SIGINT', () => {
+  console.log('📴 SIGINT received, shutting down gracefully...');
+  server.close(() => {
+    console.log('✅ Process terminated');
+    sequelize.close().then(() => {
+      process.exit(0);
+    });
+  });
 });
 
 module.exports = { app, sequelize };
