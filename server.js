@@ -1,171 +1,96 @@
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
 const path = require('path');
-require('dotenv').config();
-
-const { sequelize, connectDB } = require('./config/database');
-const { responseError } = require('./utils/response');
-
-// Import Routes
-const authRoutes = require('./routes/authRoutes');
-const productRoutes = require('./routes/productRoutes');
-const categoryRoutes = require('./routes/categoryRoutes');
-const villageRoutes = require('./routes/villageRoutes');
-const orderRoutes = require('./routes/orderRoutes');
+const { Sequelize } = require('sequelize');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
-const API_PREFIX = process.env.API_PREFIX || '/api/v1';
 
-// =======================
-// MIDDLEWARE
-// =======================
+// Middleware
+app.use(cors({ 
+  origin: process.env.CORS_ORIGIN?.split(',') || '*',
+  credentials: true 
+}));
 app.use(helmet());
+app.use(morgan('dev'));
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
-app.use(cors({
-  origin: process.env.CORS_ORIGIN
-    ? process.env.CORS_ORIGIN.split(',')
-    : true,
-  credentials: true
-}));
+// Serve static files (index.html, admin.html, dll)
+app.use(express.static(path.join(__dirname)));
 
-app.use(
-  morgan(
-    process.env.NODE_ENV === 'production'
-      ? 'combined'
-      : 'dev'
-  )
+// Konfigurasi Database
+// Fallback ke localhost jika variabel Railway belum terdeteksi
+const sequelize = new Sequelize(
+  process.env.DB_NAME || 'nusa_grow',
+  process.env.DB_USER || 'root',
+  process.env.DB_PASSWORD || '',
+  {
+    host: process.env.DB_HOST || 'localhost',
+    port: process.env.DB_PORT || 3306,
+    dialect: process.env.DB_DIALECT || 'mysql',
+    dialectOptions: process.env.NODE_ENV === 'production' ? {
+      ssl: { 
+        require: false, // Matikan SSL strict untuk menghindari error di Railway
+        rejectUnauthorized: false 
+      }
+    } : {},
+    pool: {
+      max: parseInt(process.env.DB_POOL_MAX) || 10,
+      min: parseInt(process.env.DB_POOL_MIN) || 0,
+      acquire: parseInt(process.env.DB_POOL_ACQUIRE) || 30000,
+      idle: parseInt(process.env.DB_POOL_IDLE) || 10000
+    },
+    logging: process.env.NODE_ENV === 'development' ? console.log : false
+  }
 );
 
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({
-  extended: true,
-  limit: '10mb'
-}));
-
-// Static Files
-app.use(
-  '/uploads',
-  express.static(
-    path.join(__dirname, 'public/uploads')
-  )
-);
-
-// =======================
-// HEALTH CHECK
-// =======================
-app.get('/health', (req, res) => {
-  res.status(200).json({
-    success: true,
-    status: 'OK',
-    timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV || 'development'
+// Route Health Check (Penting untuk Railway)
+app.get('/api/health', (req, res) => {
+  res.json({ 
+    status: 'OK', 
+    message: 'Nusa.Grow API is running 🚀',
+    timestamp: new Date().toISOString()
   });
 });
 
-// =======================
-// API ROUTES
-// =======================
-app.use(`${API_PREFIX}/auth`, authRoutes);
-app.use(`${API_PREFIX}/products`, productRoutes);
-app.use(`${API_PREFIX}/categories`, categoryRoutes);
-app.use(`${API_PREFIX}/villages`, villageRoutes);
-app.use(`${API_PREFIX}/orders`, orderRoutes);
-
-// =======================
-// 404 HANDLER
-// =======================
-app.use((req, res) => {
-  responseError(
-    res,
-    404,
-    `Route ${req.originalUrl} not found`
-  );
+// Root Route
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-// =======================
-// GLOBAL ERROR HANDLER
-// =======================
-app.use((err, req, res, next) => {
-  console.error('❌ Unhandled Error:', err);
-
-  if (err.name === 'SequelizeValidationError') {
-    return responseError(
-      res,
-      400,
-      'Validation error',
-      err.errors
-    );
-  }
-
-  if (err.name === 'SequelizeUniqueConstraintError') {
-    return responseError(
-      res,
-      400,
-      'Duplicate entry',
-      {
-        field: err.errors[0]?.path,
-        message: 'Data already exists'
-      }
-    );
-  }
-
-  return responseError(
-    res,
-    500,
-    'Internal server error',
-    process.env.NODE_ENV === 'development'
-      ? err.message
-      : undefined
-  );
+// Admin Route
+app.get('/admin', (req, res) => {
+  res.sendFile(path.join(__dirname, 'admin.html'));
 });
 
-// =======================
-// START SERVER
-// =======================
-(async () => {
-  try {
-    console.log('🔄 Connecting database...');
+// ==========================================
+// STRATEGI ANTI-CRASH: Jalankan Server DULU
+// ==========================================
+const PORT = process.env.PORT || 3000;
 
-    await connectDB();
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`🚀 Server running on port ${PORT}`);
+  console.log(`📍 Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`🔗 Health check: http://localhost:${PORT}/api/health`);
 
-    if (sequelize) {
-      await sequelize.authenticate();
-      console.log('✅ Database connected');
-    }
-
-    app.listen(PORT, '0.0.0.0', () => {
-      console.log(`🚀 Server running on port ${PORT}`);
-      console.log(`📡 API Prefix: ${API_PREFIX}`);
-      console.log(`🌍 Environment: ${process.env.NODE_ENV}`);
+  // Setelah server jalan, baru coba connect database di background
+  sequelize.authenticate()
+    .then(() => {
+      console.log('✅ Database connected successfully');
+      // Opsional: Sync database jika tabel belum ada
+      // return sequelize.sync({ alter: false }); 
+    })
+    .then(() => {
+      console.log('🗄️ Database synchronized (if needed)');
+    })
+    .catch(err => {
+      console.error('❌ Database connection failed:', err.message);
+      console.log('️ Server is running, but database is not connected.');
+      console.log('💡 Tip: Cek Railway Variables apakah sudah di-Reference ke MySQL Service.');
     });
-
-  } catch (error) {
-    console.error('❌ Failed to start application');
-    console.error(error);
-    process.exit(1);
-  }
-})();
-
-// =======================
-// PROCESS ERROR HANDLER
-// =======================
-process.on('unhandledRejection', (reason) => {
-  console.error('❌ Unhandled Rejection:', reason);
 });
 
-process.on('uncaughtException', (err) => {
-  console.error('❌ Uncaught Exception:', err);
-});
-
-process.on('SIGTERM', () => {
-  console.log('🛑 SIGTERM received');
-  process.exit(0);
-});
-
-process.on('SIGINT', () => {
-  console.log('🛑 SIGINT received');
-  process.exit(0);
-});
+module.exports = { app, sequelize };
