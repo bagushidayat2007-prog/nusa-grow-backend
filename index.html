@@ -665,51 +665,51 @@
     updateCartUI();
   </script>
   <script>
-// API Base URL
-const API_URL = window.location.hostname === 'localhost' 
-  ? 'http://localhost:3000/api' 
-  : `${window.location.origin}/api`;
+    // API Base URL
+    const API_URL = window.location.hostname === 'localhost' 
+      ? 'http://localhost:3000/api' 
+      : `${window.location.origin}/api`;
 
-// Load Products
-async function loadProducts() {
-  try {
-    const response = await fetch(`${API_URL}/products`);
-    const result = await response.json();
-    
-    if (result.success) {
-      const productsContainer = document.querySelector('.produk-grid') || document.body;
-      result.data.forEach(product => {
-        // Render product cards here
-        console.log('Product:', product);
-      });
+    // Load Products
+    async function loadProducts() {
+      try {
+        const response = await fetch(`${API_URL}/products`);
+        const result = await response.json();
+        
+        if (result.success) {
+          const productsContainer = document.querySelector('.produk-grid') || document.body;
+          result.data.forEach(product => {
+            // Render product cards here
+            console.log('Product:', product);
+          });
+        }
+      } catch (error) {
+        console.error('Error loading products:', error);
+      }
     }
-  } catch (error) {
-    console.error('Error loading products:', error);
-  }
-}
 
-// Submit Order
-async function submitOrder(orderData) {
-  try {
-    const response = await fetch(`${API_URL}/orders`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(orderData)
-    });
-    const result = await response.json();
-    
-    if (result.success) {
-      alert('Pesanan berhasil dibuat!');
-      return result;
+    // Submit Order
+    async function submitOrder(orderData) {
+      try {
+        const response = await fetch(`${API_URL}/orders`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(orderData)
+        });
+        const result = await response.json();
+        
+        if (result.success) {
+          alert('Pesanan berhasil dibuat!');
+          return result;
+        }
+      } catch (error) {
+        console.error('Error submitting order:', error);
+        alert('Terjadi kesalahan');
+      }
     }
-  } catch (error) {
-    console.error('Error submitting order:', error);
-    alert('Terjadi kesalahan');
-  }
-}
 
-// Load on page load
-document.addEventListener('DOMContentLoaded', loadProducts);
+    // Load on page load
+    document.addEventListener('DOMContentLoaded', loadProducts);
 </script>
 </body>
 </html>
