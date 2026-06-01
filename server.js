@@ -32,7 +32,7 @@ const sequelize = new Sequelize(
     dialect: process.env.DB_DIALECT || 'mysql',
     dialectOptions: process.env.NODE_ENV === 'production' ? {
       ssl: { 
-        require: true, 
+        require: false, 
         rejectUnauthorized: false 
       }
     } : {},
