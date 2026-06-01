@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nusa.Grow_ID | Produk Unggulan Desa Jawa Barat</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+  <link rel="icon" type="image/png" href="image.png">
+  <canvas id="canvas" width="64" height="64" style="display:none;"></canvas>
+  
+  <script>
+    const img = new Image();
+    img.src = "image.png";
+
+    img.onload = function () {
+        const canvas = document.getElementById("canvas");
+        const ctx = canvas.getContext("2d");
+
+        ctx.beginPath();
+        ctx.arc(32, 32, 32, 0, Math.PI * 2);
+        ctx.closePath();
+        ctx.clip();
+
+        ctx.drawImage(img, 0, 0, 64, 64);
+
+        const url = canvas.toDataURL("image/png");
+
+        const link = document.createElement("link");
+        link.rel = "icon";
+        link.href = url;
+
+        document.head.appendChild(link);
+    };
+  </script>
+
+  <style>
+    :root {
+      --blue: #1976D2;
+      --blue-dark: #1565C0;
+      --brown: #8D6E63;
+      --brown-dark: #6D4C41;
+      --bg-mix: linear-gradient(135deg, var(--blue) 50%, var(--brown) 50%);
+      --neutral-bg: #F8F9FA;
+      --neutral-text: #546E7A;
+    }
+    * {
+      box-sizing: border-box;
+    }
+    body { 
+      font-family: 'Segoe UI', system-ui, sans-serif; 
+      background: var(--neutral-bg);
+      overflow-x: hidden;
+    }
+    
+    /* Color Utilities */
+    .bg-blue { background-color: var(--blue) !important; color: #fff !important; }
+    .bg-brown { background-color: var(--brown) !important; color: #fff !important; }
+    .text-blue { color: var(--blue) !important; }
+    .text-brown { color: var(--brown) !important; }
+    .btn-blue { background-color: var(--blue) !important; border: none; color: #fff !important; }
+    .btn-blue:hover { background-color: var(--blue-dark) !important; color: #fff !important; }
+    .btn-brown { background-color: var(--brown) !important; border: none; color: #fff !important; }
+    .btn-brown:hover { background-color: var(--brown-dark) !important; color: #fff !important; }
+    .btn-outline-blue { border: 2px solid var(--blue) !important; color: var(--blue) !important; background: transparent !important; }
+    .btn-outline-blue:hover { background-color: var(--blue) !important; color: #fff !important; }
+    .btn-outline-brown { border: 2px solid var(--brown) !important; color: var(--brown) !important; background: transparent !important; }
+    .btn-outline-brown:hover { background-color: var(--brown) !important; color: #fff !important; }
+
+    /* Navbar dengan Logo */
+    .navbar { 
+      background: var(--bg-mix) !important;
+      padding: 0.8rem 1rem;
+    }
+    .navbar-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: #FFFFFF !important;
+      font-weight: 700;
+      font-size: 1.4rem;
+    }
+    .navbar-brand img {
+      width: 45px;
+      height: 45px;
+      object-fit: contain;
+      border-radius: 50%;
+      background: white;
+      padding: 2px;
+    }
+    .nav-link { 
+      color: #FFFFFF !important; 
+      font-weight: 600;
+      font-size: 0.95rem;
+      padding: 0.5rem 1rem !important;
+    }
+    .nav-link:hover {
+      opacity: 0.9;
+    }
+    
+    /* Hero Section Responsif */
+    .hero {
+      background: url('https://source.unsplash.com/1600x900/?westjava,farm') center/cover no-repeat;
+      position: relative; 
+      min-height: 70vh; 
+      display: flex; 
+      align-items: center; 
+      justify-content: center; 
+      text-align: center;
+      padding: 2rem 1rem;
+    }
+    .hero::before { 
+      content: ''; 
+      position: absolute; 
+      inset: 0; 
+      background: linear-gradient(135deg, rgba(25,118,210,0.7) 50%, rgba(141,110,99,0.7) 50%); 
+    }
+    .hero-content { 
+      position: relative; 
+      z-index: 2; 
+      color: #FFFFFF;
+      max-width: 800px;
+    }
+    .hero h1 {
+      font-size: clamp(2rem, 5vw, 3.5rem);
+      margin-bottom: 1rem;
+    }
+    .hero .lead {
+      font-size: clamp(1rem, 2.5vw, 1.3rem);
+      margin-bottom: 2rem;
+    }
+    .btn-brand { 
+      background: var(--blue); 
+      color: #fff; 
+      border: none; 
+      padding: 12px 30px; 
+      border-radius: 30px; 
+      font-weight: 600; 
+      transition: all 0.3s;
+      font-size: 1rem;
+    }
+    .btn-brand:hover { 
+      background: var(--brown); 
+      transform: translateY(-2px); 
+      color: #fff; 
+    }
+    
+    /* Card Product Responsif */
+    .card-product { 
+      background: #fff; 
+      border: 2px solid var(--brown); 
+      border-radius: 16px; 
+      overflow: hidden; 
+      transition: 0.3s;
+      height: 100%;
+    }
+    .card-product:hover { 
+      transform: translateY(-6px); 
+      box-shadow: 0 12px 24px rgba(141,110,99,0.25); 
+    }
+    .card-product img {
+      width: 100%;
+      height: 200px;
+      object-fit: cover;
+    }
+    .section-title { 
+      color: var(--brown); 
+      font-weight: 700; 
+      border-left: 5px solid var(--blue); 
+      padding-left: 15px;
+      font-size: clamp(1.5rem, 3vw, 2rem);
+    }
+    
+    /* Map Responsif */
+    #map { 
+      height: 300px; 
+      border-radius: 12px; 
+      border: 2px solid var(--blue);
+      width: 100%;
+    }
+    .modal-content { 
+      border-radius: 16px; 
+      border: 2px solid var(--brown); 
+    }
+    .badge-stock { 
+      background: var(--brown); 
+      color: #fff; 
+    }
+    .footer { 
+      background: var(--bg-mix); 
+      color: #fff; 
+      padding: 40px 0; 
+    }
+    .payment-option { 
+      border: 2px solid #ccc; 
+      border-radius: 8px; 
+      padding: 12px; 
+      cursor: pointer; 
+      transition: 0.2s;
+      font-size: 0.9rem;
+    }
+    .payment-option.selected { 
+      border-color: var(--blue); 
+      background: #E3F2FD; 
+    }
+    .text-muted { 
+      color: var(--neutral-text) !important; 
+    }
+    
+    /* Responsive Utilities */
+    @media (max-width: 768px) {
+      .navbar-brand {
+        font-size: 1.2rem;
+      }
+      .navbar-brand img {
+        width: 40px;
+        height: 40px;
+      }
+      .nav-link {
+        font-size: 0.9rem;
+        padding: 0.4rem 0.8rem !important;
+      }
+      .hero {
+        min-height: 60vh;
+        padding: 1.5rem 1rem;
+      }
+      .hero h1 {
+        font-size: 2rem;
+      }
+      .hero .lead {
+        font-size: 1rem;
+      }
+      .btn-brand {
+        padding: 10px 24px;
+        font-size: 0.95rem;
+        width: 100%;
+        max-width: 250px;
+      }
+      .card-product img {
+        height: 180px;
+      }
+      #map {
+        height: 250px;
+      }
+    }
+    
+    @media (max-width: 576px) {
+      .navbar-brand {
+        font-size: 1.1rem;
+      }
+      .navbar-brand img {
+        width: 35px;
+        height: 35px;
+      }
+      .section-title {
+        font-size: 1.4rem;
+      }
+      .card-product img {
+        height: 160px;
+      }
+      .modal-dialog {
+        margin: 0.5rem;
+      }
+    }
+    
+    /* Grid Responsif */
+    .row.g-4 {
+      margin: 0 -0.75rem;
+    }
+    .row.g-4 > * {
+      padding: 0 0.75rem;
+    }
+    
+    /* Kategori Cards */
+    .card.h-100 {
+      cursor: pointer;
+      transition: transform 0.3s;
+    }
+    .card.h-100:hover {
+      transform: translateY(-5px);
+    }
+  </style>
+</head>
+<body>
+
+  <nav class="navbar navbar-expand-lg sticky-top">
+    <div class="container">
+      <!-- Logo di Sebelah Kiri -->
+      <a class="navbar-brand" href="#">
+        <img src="image.png" alt="Nusa.Grow_ID Logo">
+        <span>Nusa.Grow_ID</span>
+      </a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navMenu" aria-controls="navMenu" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navMenu">
+        <ul class="navbar-nav ms-auto">
+          <li class="nav-item"><a class="nav-link" href="#produk">Produk</a></li>
+          <li class="nav-item"><a class="nav-link" href="#kategori">Kategori</a></li>
+          <li class="nav-item"><a class="nav-link" href="#" onclick="showNusaStory()">Nusa Story</a></li>
+          <li class="nav-item">
+            <a class="nav-link position-relative" href="#" data-bs-toggle="modal" data-bs-target="#cartModal">
+              <i class="fas fa-shopping-cart"></i> Keranjang <span class="badge bg-brown rounded-pill" id="cartCount">0</span>
+            </a>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <section class="hero">
+    <div class="hero-content px-3">
+      <h1 class="display-4 fw-bold">Nusa.Grow_ID</h1>
+      <p class="lead mb-4">Menghubungkan Produk Lokal Desa ke Pasar Digital Indonesia</p>
+      <div class="d-flex gap-3 justify-content-center flex-wrap">
+        <a href="#produk" class="btn btn-brand">Jelajahi Produk</a>
+        <button class="btn btn-outline-light px-4 py-2" onclick="showNusaStory()">Nusa Story</button>
+      </div>
+    </div>
+  </section>
+
+  <section id="kategori" class="py-5 bg-light">
+    <div class="container">
+      <h2 class="section-title mb-4">Kategori Produk</h2>
+      <div class="row g-4">
+        <div class="col-md-4 col-sm-6">
+          <div class="card h-100 border-0 shadow-sm text-center p-4" onclick="filterProducts('agro')">
+            <i class="fas fa-wheat-awn fa-3x text-blue mb-3"></i>
+            <h4 class="fw-bold text-brown">Nusa Agro</h4>
+            <p class="text-muted mb-0">Jagung Pasirwaru, Kopi Rajadesa</p>
+          </div>
+        </div>
+        <div class="col-md-4 col-sm-6">
+          <div class="card h-100 border-0 shadow-sm text-center p-4" onclick="filterProducts('food')">
+            <i class="fas fa-fish fa-3x text-brown mb-3"></i>
+            <h4 class="fw-bold text-blue">Nusa Food</h4>
+            <p class="text-muted mb-0">Ikan Nila Kawali</p>
+          </div>
+        </div>
+        <div class="col-md-4 col-sm-12">
+          <div class="card h-100 border-0 shadow-sm text-center p-4" onclick="filterProducts('craft')">
+            <i class="fas fa-layer-group fa-3x text-blue mb-3"></i>
+            <h4 class="fw-bold text-brown">Nusa Craft</h4>
+            <p class="text-muted mb-0">Anyaman Bambu, Sepatu Cibaduyut, Jaket Kulit</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="produk" class="py-5">
+    <div class="container">
+      <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+        <h2 class="section-title m-0">Produk Unggulan</h2>
+        <input type="text" id="searchInput" class="form-control w-100 w-md-auto" style="max-width: 300px;" placeholder="Cari produk..." oninput="renderProducts()">
+      </div>
+      <div class="row g-4" id="productGrid"></div>
+    </div>
+  </section>
+
+  <footer class="footer text-center">
+    <div class="container">
+      <p class="mb-1 fw-bold">© 2026 Nusa.Grow_ID</p>
+      <p class="small mb-0">Memberdayakan Desa Jawa Barat | UMKM | Pertanian & Kerajinan Lokal</p>
+    </div>
+  </footer>
+
+  <!-- MODALS -->
+  <div class="modal fade" id="detailModal" tabindex="-1" aria-labelledby="detailModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header bg-blue">
+          <h5 class="modal-title" id="detailModalLabel">Detail Produk</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="row">
+            <div class="col-md-6">
+              <img id="detailImg" src="" class="img-fluid rounded mb-3" alt="Produk">
+              <div id="hyperlocalSection" class="mt-3 p-3 bg-light rounded">
+                <h6 class="text-brown"><i class="fas fa-map-marker-alt text-blue"></i> Hyperlocal Supply Aggregator</h6>
+                <div class="row g-2 mb-2">
+                  <div class="col-12 col-sm-8"><input type="text" id="userLoc" class="form-control" placeholder="Lokasi Anda (Kota/Kab)"></div>
+                  <div class="col-12 col-sm-4"><button class="btn btn-brand w-100" onclick="findNearby()">Cari</button></div>
+                </div>
+                <div id="nearbyResults" class="mt-2"></div>
+                <div id="map" class="mt-3 d-none"></div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <h4 id="detailName" class="fw-bold text-brown"></h4>
+              <p class="text-blue fw-bold fs-5" id="detailPrice"></p>
+              <span class="badge badge-stock" id="detailStock"></span>
+              <p class="mt-2"><strong>Asal Desa:</strong> <span id="detailVillage"></span></p>
+              <p class="mt-2"><strong>Deskripsi:</strong></p>
+              <p id="detailDesc" class="text-muted small"></p>
+              <p><i class="fas fa-star text-brown"></i> <span id="detailRating"></span></p>
+              <button class="btn btn-brand w-100 mt-2" onclick="addToCartFromDetail()">
+                <i class="fas fa-cart-plus"></i> Pesan / Tambah Keranjang
+              </button>
+            </div>
+          </div>
+          <hr>
+          <h5 class="fw-bold text-blue"><i class="fas fa-book-open"></i> Nusa Story</h5>
+          <p id="detailStory" class="text-muted bg-white p-3 rounded border"></p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="cartModal" tabindex="-1" aria-labelledby="cartModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header bg-brown">
+          <h5 class="modal-title" id="cartModalLabel">Keranjang Belanja</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body" id="cartBody"></div>
+        <div class="modal-footer justify-content-between">
+          <span class="fw-bold" id="cartTotal">Total: Rp 0</span>
+          <button class="btn btn-blue" onclick="openCheckout()">Checkout</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="checkoutModal" tabindex="-1" aria-labelledby="checkoutModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header bg-blue">
+          <h5 class="modal-title" id="checkoutModalLabel">Proses Pembayaran</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <form id="checkoutForm">
+            <div class="mb-2"><label>Nama Lengkap</label><input type="text" class="form-control" required></div>
+            <div class="mb-2"><label>Alamat Pengiriman</label><textarea class="form-control" rows="2" required></textarea></div>
+            <div class="mb-3"><label>Kota/Kab</label><input type="text" class="form-control" required></div>
+            <label class="mb-2">Metode Pembayaran</label>
+            <div class="row g-2" id="paymentMethods">
+              <div class="col-6"><div class="payment-option text-center" onclick="selectPayment(this)">BRI</div></div>
+              <div class="col-6"><div class="payment-option text-center" onclick="selectPayment(this)">BCA</div></div>
+              <div class="col-6"><div class="payment-option text-center" onclick="selectPayment(this)">DANA</div></div>
+              <div class="col-6"><div class="payment-option text-center" onclick="selectPayment(this)">GOPAY</div></div>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-outline-brown" data-bs-dismiss="modal">Batal</button>
+          <button class="btn btn-blue" onclick="processCheckout()">Bayar & Proses</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="nusaStoryModal" tabindex="-1" aria-labelledby="nusaStoryModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header bg-brown"><h5 class="modal-title" id="nusaStoryModalLabel">Nusa Story - Cerita Desa</h5><button class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button></div>
+        <div class="modal-body" id="storyContent"></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    
+    // DATA PRODUK & STORY
+    let products = []; // Akan diisi dari API
+
+    const nusaStories = {
+      'Pasirwaru, Garut': 'Desa Pasirwaru di Garut dikenal sebagai penghasil jagung dan kerajinan anyaman bambu. Masyarakatnya mengandalkan pertanian jagung sebagai mata pencarian utama, sementara anyaman bambu menjadi warisan budaya dan sumber ekonomi. Melalui Nusa.Grow_ID, produk-produk desa ini dapat menjangkau pasar yang lebih luas, mendukung ekonomi lokal dan pelestarian budaya.',
+      'Rajadesa, Ciamis': 'Desa Rajadesa di Ciamis memiliki sejarah panjang yang terkait dengan Kerajaan Pajajaran dan Kesultanan Cirebon, serta berperan dalam penyebaran Islam. Berbeda dengan Kawali yang menonjolkan wisata sejarah, potensi utama Rajadesa terletak pada produk unggulannya seperti Kopi Rajadesa dan kerajinan anyaman bambu. Desa ini menunjukkan bagaimana warisan budaya dapat menjadi sumber penghidupan yang bernilai ekonomi dan berdaya saing.',
+      'Kawali, Ciamis': 'Desa Kawali di Ciamis memiliki nilai sejarah tinggi sebagai pusat pemerintahan Kerajaan Sunda pada masa Prabu Niskala Wastu Kancana, dengan Situs Astana Gede Kawali sebagai bukti sejarahnya. Kawali menawarkan narasi kuat yang menggabungkan sejarah dan aktivitas masyarakat, menjadikannya contoh desa dengan identitas historis yang kaya melalui Nusa.Grow ID.',
+      'Cibaduyut, Bandung': 'Cibaduyut di Bandung adalah ikon industri alas kaki Indonesia, terkenal dengan pengrajinnya yang mengubah kulit menjadi sepatu berkualitas tinggi dengan nilai seni. Para pengrajin mempertahankan keterampilan tradisional sambil berinovasi, menjadikan Cibaduyut sentra produksi sepatu yang dikenal luas. Melalui Nusa.Grow_ID, produk Cibaduyut menjangkau lebih banyak pelanggan, mendukung industri kreatif lokal, menciptakan lapangan kerja, dan melestarikan keahlian turun-temurun.',
+      'Sukaregang, Garut': 'Desa Sukaregang di Garut adalah sentra kerajinan kulit, terutama jaket kulit yang dikenal sebagai "Jaket Kulit Garut." Didukung bahan baku melimpah dan lokasi strategis, industri ini menyerap ribuan tenaga kerja dan produknya telah menembus pasar nasional hingga internasional. Nusa.Grow_ID hadir sebagai platform digital untuk mengatasi tantangan pemasaran, membantu pengrajin menjangkau pasar lebih luas, dan Melalui Nusa.Grow_ID dapat meningkatkan nilai jual produk, memberdayakan ekonomi desa, dan memastikan keberlanjutan industri jaket kulit Garut.'
+    };
+
+    let cart = JSON.parse(localStorage.getItem('nusa_cart')) || [];
+    let currentDetailId = null;
+    let selectedPayment = null;
+    let map = null;
+
+    function renderProducts(filterCat = null, search = '') {
+      const grid = document.getElementById('productGrid');
+      grid.innerHTML = '';
+      let filtered = products;
+      if(filterCat) filtered = filtered.filter(p => p.cat === filterCat);
+      if(search) filtered = filtered.filter(p => p.name.toLowerCase().includes(search.toLowerCase()));
+
+      filtered.forEach(p => {
+        grid.innerHTML += `
+          <div class="col-lg-3 col-md-4 col-sm-6 col-12">
+            <div class="card-product p-2">
+              <img src="${p.img}" class="w-100 rounded mb-2" alt="${p.name}">
+              <h5 class="fw-bold small mb-1 text-brown">${p.name}</h5>
+              <p class="text-blue fw-bold mb-1">Rp ${p.price.toLocaleString()}</p>
+              <p class="text-muted small mb-2"><i class="fas fa-map-marker-alt text-brown"></i> ${p.village}</p>
+              <div class="d-flex gap-2">
+                <button class="btn btn-sm btn-outline-blue flex-fill" onclick="openDetail(${p.id})">Detail</button>
+                <button class="btn btn-sm btn-brown flex-fill" onclick="addToCart(${p.id})">Beli</button>
+              </div>
+            </div>
+          </div>`;
+      });
+    }
+
+    function filterProducts(cat) { 
+      renderProducts(cat, document.getElementById('searchInput').value); 
+      document.getElementById('produk').scrollIntoView({behavior:'smooth'}); 
+    }
+    document.getElementById('searchInput').addEventListener('input', () => renderProducts(null, document.getElementById('searchInput').value));
+
+    function openDetail(id) {
+      const p = products.find(x => x.id === id);
+      if(!p) return;
+      currentDetailId = id;
+      document.getElementById('detailImg').src = p.img;
+      document.getElementById('detailName').innerText = p.name;
+      document.getElementById('detailPrice').innerText = `Rp ${p.price.toLocaleString()}`;
+      document.getElementById('detailStock').innerText = `Stok: ${p.stock}`;
+      document.getElementById('detailVillage').innerText = p.village;
+      document.getElementById('detailDesc').innerText = p.desc;
+      document.getElementById('detailRating').innerText = `${p.rating}/5.0`;
+      document.getElementById('detailStory').innerText = nusaStories[p.village] || 'Cerita desa belum tersedia.';
+      new bootstrap.Modal(document.getElementById('detailModal')).show();
+    }
+
+    function addToCartFromDetail() { addToCart(currentDetailId); }
+    function addToCart(id) {
+      const p = products.find(x => x.id === id);
+      const existing = cart.find(c => c.id === id);
+      if(existing) existing.qty++; else cart.push({id, qty:1, price:p.price, name:p.name});
+      localStorage.setItem('nusa_cart', JSON.stringify(cart));
+      updateCartUI();
+      alert('Produk ditambahkan ke keranjang!');
+    }
+
+    function updateCartUI() {
+      document.getElementById('cartCount').innerText = cart.reduce((a,b)=>a+b.qty,0);
+      const body = document.getElementById('cartBody');
+      let total = 0;
+      if(cart.length === 0) body.innerHTML = '<p class="text-center text-muted">Keranjang kosong</p>';
+      else {
+        body.innerHTML = cart.map((c,i) => {
+          total += c.qty * c.price;
+          return `<div class="d-flex justify-content-between align-items-center mb-2 p-2 border rounded">
+            <div><b class="text-brown">${c.name}</b><br><small class="text-blue">Rp ${c.price.toLocaleString()}</small></div>
+            <div class="d-flex gap-2 align-items-center">
+              <button class="btn btn-sm btn-outline-brown" onclick="changeQty(${i},-1)">-</button>
+              <span>${c.qty}</span>
+              <button class="btn btn-sm btn-outline-blue" onclick="changeQty(${i},1)">+</button>
+            </div>
+          </div>`;
+        }).join('');
+      }
+      document.getElementById('cartTotal').innerText = `Total: Rp ${total.toLocaleString()}`;
+    }
+
+    function changeQty(idx, delta) {
+      cart[idx].qty += delta;
+      if(cart[idx].qty <= 0) cart.splice(idx,1);
+      localStorage.setItem('nusa_cart', JSON.stringify(cart));
+      updateCartUI();
+    }
+
+    function openCheckout() {
+      if(cart.length === 0) return alert('Keranjang kosong!');
+      new bootstrap.Modal(document.getElementById('checkoutModal')).show();
+    }
+
+    function selectPayment(el) {
+      document.querySelectorAll('.payment-option').forEach(e=>e.classList.remove('selected'));
+      el.classList.add('selected');
+      selectedPayment = el.innerText.trim();
+    }
+
+    function processCheckout() {
+      if(!selectedPayment) return alert('Pilih metode pembayaran terlebih dahulu!');
+      const order = { id: 'ORD-'+Date.now(), items: cart, total: cart.reduce((a,c)=>a+(c.qty*c.price),0), payment: selectedPayment, status: 'Diproses' };
+      let orders = JSON.parse(localStorage.getItem('nusa_orders')||'[]');
+      orders.push(order);
+      localStorage.setItem('nusa_orders', JSON.stringify(orders));
+      cart = [];
+      localStorage.setItem('nusa_cart', JSON.stringify(cart));
+      updateCartUI();
+      bootstrap.Modal.getInstance(document.getElementById('checkoutModal')).hide();
+      alert(`Pembayaran Berhasil! \nNo Pesanan: ${order.id} \nMetode: ${order.payment} \nStatus: ${order.status}`);
+    }
+
+    function showNusaStory() {
+      const content = Object.entries(nusaStories).map(([v,s])=>`<h6 class="fw-bold text-blue">${v}</h6><p class="small text-muted">${s}</p>`).join('<hr>');
+      document.getElementById('storyContent').innerHTML = content;
+      new bootstrap.Modal(document.getElementById('nusaStoryModal')).show();
+    }
+
+    // HYPERLOCAL MAP
+    function findNearby() {
+      const loc = document.getElementById('userLoc').value.trim();
+      if(!loc) return alert('Masukkan lokasi Anda');
+      document.getElementById('map').classList.remove('d-none');
+      if(!map) map = L.map('map').setView([-6.9, 107.6], 10);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {attribution: '© OSM'}).addTo(map);
+      
+      const mockVillages = [
+        {name:'Pasirwaru, Garut', lat:-7.2, lon:107.9, dist:5, ongkir:12000},
+        {name:'Rajadesa, Ciamis', lat:-7.1, lon:108.2, dist:45, ongkir:25000},
+        {name:'Kawali, Ciamis', lat:-7.2, lon:108.4, dist:52, ongkir:28000}
+      ].sort((a,b)=>a.dist-b.dist);
+
+      let html = '<ul class="list-group mt-2">';
+      mockVillages.forEach(v=>{
+        L.marker([v.lat, v.lon]).addTo(map).bindPopup(`${v.name}<br>Jarak: ${v.dist} km`);
+        html += `<li class="list-group-item d-flex justify-content-between align-items-center flex-wrap gap-2">
+          <span><b class="text-brown">${v.name}</b> <small class="text-muted">(${v.dist} km)</small></span>
+          <button class="btn btn-sm btn-blue" onclick="alert('Pesanan diarahkan ke desa ${v.name}')">Pesan Sekarang</button>
+        </li>`;
+      });
+      html += '</ul>';
+      document.getElementById('nearbyResults').innerHTML = html;
+      setTimeout(()=>map.invalidateSize(), 300);
+    }
+
+        // FETCH PRODUCTS FROM API BACKEND
+    async function loadProducts() {
+      try {
+        const response = await fetch('http://localhost:3000/api/v1/products');
+        const result = await response.json();
+        
+        if (result.success && result.data) {
+          // Transform data API ke format frontend
+          products = result.data.map(p => ({
+            id: p.id_produk || p.id,
+            cat: p.category_id === 1 ? 'agro' : p.category_id === 2 ? 'food' : 'craft',
+            name: p.nama_produk || p.name,
+            price: parseFloat(p.harga || p.price),
+            stock: p.stok || p.stock || 0,
+            village: p.village_name || p.village?.name || 'Unknown',
+            desc: p.deskripsi || p.description || '',
+            rating: parseFloat(p.rating) || 0,
+            img: p.gambar || p.image_url || 'https://source.unsplash.com/400x300/?product'
+          }));
+          renderProducts();
+        }
+      } catch (error) {
+        console.error('Error loading products:', error);
+        // Fallback: pakai data hardcoded jika API error
+        products = [
+          { id: 1, cat: 'agro', name: 'Jagung Pasirwaru', price: 35000, stock: 150, village: 'Pasirwaru, Garut', desc: 'Jagung manis organik', rating: 4.8, img: 'images.jpg' },
+          { id: 2, cat: 'agro', name: 'Kopi Rajadesa', price: 85000, stock: 80, village: 'Rajadesa, Ciamis', desc: 'Kopi arabika', rating: 4.9, img: 'kopirajadesa.webp' },
+          { id: 3, cat: 'food', name: 'Ikan Nila Kawali', price: 45000, stock: 60, village: 'Kawali, Ciamis', desc: 'Ikan nila segar', rating: 4.7, img: 'download.jpg' },
+          { id: 4, cat: 'craft', name: 'Anyaman Bambu Pasirwaru', price: 120000, stock: 40, village: 'Pasirwaru, Garut', desc: 'Anyaman bambu', rating: 4.9, img: 'download (1).jpg' },
+          { id: 5, cat: 'craft', name: 'Anyaman Rajadesa', price: 115000, stock: 35, village: 'Rajadesa, Ciamis', desc: 'Anyaman motif Sunda', rating: 4.8, img: 'anyaman.webp' },
+          { id: 6, cat: 'craft', name: 'Sepatu Cibaduyut', price: 450000, stock: 25, village: 'Cibaduyut, Bandung', desc: 'Sepatu kulit', rating: 5.0, img: 'image copy.png' },
+          { id: 7, cat: 'craft', name: 'Jaket Kulit Garut', price: 750000, stock: 18, village: 'Sukaregang, Garut', desc: 'Jaket kulit premium', rating: 4.9, img: 'jaket.jpg' }
+        ];
+        renderProducts();
+      }
+    }
+
+    // INIT
+    loadProducts();
+    updateCartUI();
+  </script>
+  <script>
+// API Base URL
+const API_URL = window.location.hostname === 'localhost' 
+  ? 'http://localhost:3000/api' 
+  : `${window.location.origin}/api`;
+
+// Load Products
+async function loadProducts() {
+  try {
+    const response = await fetch(`${API_URL}/products`);
+    const result = await response.json();
+    
+    if (result.success) {
+      const productsContainer = document.querySelector('.produk-grid') || document.body;
+      result.data.forEach(product => {
+        // Render product cards here
+        console.log('Product:', product);
+      });
+    }
+  } catch (error) {
+    console.error('Error loading products:', error);
+  }
+}
+
+// Submit Order
+async function submitOrder(orderData) {
+  try {
+    const response = await fetch(`${API_URL}/orders`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(orderData)
+    });
+    const result = await response.json();
+    
+    if (result.success) {
+      alert('Pesanan berhasil dibuat!');
+      return result;
+    }
+  } catch (error) {
+    console.error('Error submitting order:', error);
+    alert('Terjadi kesalahan');
+  }
+}
+
+// Load on page load
+document.addEventListener('DOMContentLoaded', loadProducts);
+</script>
+</body>
+</html>
